@@ -2,7 +2,7 @@
  * goview.js — the entire JS runtime for goview applications.
  *
  * Responsibilities:
- *   1. __goview.morph()   — called by Go to patch the DOM (via Idiomorph)
+ *   1. __goviewPatch()   — called by Go to patch the DOM (via Idiomorph or attr)
  *   2. w-call delegation  — routes user interactions to Go bindings
  *
  * Dependencies: Idiomorph (vendored as idiomorph.min.js, loaded before this file)
@@ -15,20 +15,20 @@
 
   // ─── DOM primitives called by Go via WindowExecJS / Eval ──────────────────
 
-  window.__goview = {
-    /**
-     * Morph the innerHTML of the element matching `selector` to `html`.
-     * Uses Idiomorph to preserve input focus, values, and scroll position.
-     */
-    morph(selector, html) {
-      const el = document.querySelector(selector);
-      if (!el) {
-        console.warn(`[goview] selector not found: "${selector}"`);
-        return;
-      }
-      Idiomorph.morph(el, html, { morphStyle: "innerHTML" });
-    },
+  window.__goviewPatch = function(selector, kind, a, b) {
+    const el = document.querySelector(selector);
+    if (!el) {
+      console.warn(`[goview] selector not found: "${selector}"`);
+      return;
+    }
+    if (kind === "inner") {
+      Idiomorph.morph(el, `<div>${a}</div>`, { morphStyle: "innerHTML" });
+    } else if (kind === "attr") {
+      el.setAttribute(a, b); // a = attr name, b = attr value
+    }
+  };
 
+  window.__goview = {
     show(selector) {
       const el = document.querySelector(selector);
       if (el) el.style.display = "";
